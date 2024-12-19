@@ -1,0 +1,39 @@
+### Get all users
+GET {{api_url}}/api/users
+Content-Type: application/json
+
+{
+  "pageNumber": 1,
+  "pageSize": 10
+}
+
+### Get user by ID
+GET {{api_url}}/api/users/{{user_id}}
+
+### Create user
+POST {{api_url}}/api/users
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "firstName": "John",
+  "lastName": "Doe"
+}
+
+### Update user
+PUT {{api_url}}/api/users/{{user_id}}
+Content-Type: application/json
+
+{
+  "firstName": "John Updated",
+  "lastName": "Doe Updated"
+}
+
+### Delete user
+DELETE {{api_url}}/api/users/{{user_id}}
+
+### Get user's todo lists
+GET {{api_url}}/api/users/{{user_id}}/lists
+
+### Get user's shared lists
+GET {{api_url}}/api/users/{{user_id}}/shared

@@ -1,0 +1,5 @@
+variables:
+  - name: sqlAdminUsername
+    value: 'sqladmin'
+  - name: environment
+    value: 'dev'

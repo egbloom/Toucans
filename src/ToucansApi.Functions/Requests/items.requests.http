@@ -1,0 +1,41 @@
+### Get items for list
+GET {{api_url}}/api/lists/{{list_id}}/items
+Content-Type: application/json
+
+{
+    "priority": "High",
+    "status": "NotStarted",
+    "dueDateFrom": "2024-01-01T00:00:00Z",
+    "dueDateTo": "2024-12-31T23:59:59Z",
+    "assignedToId": "{{user_id}}",
+    "pageNumber": 1,
+    "pageSize": 10
+}
+
+### Create item
+POST {{api_url}}/api/lists/{{list_id}}/items
+Content-Type: application/json
+
+{
+    "title": "New Todo Item",
+    "description": "Description of the todo item",
+    "dueDate": "2024-01-31T00:00:00Z",
+    "priority": "High",
+    "assignedToId": "{{user_id}}"
+}
+
+### Update item
+PUT {{api_url}}/api/lists/{{list_id}}/items/{{item_id}}
+Content-Type: application/json
+
+{
+    "title": "Updated Todo Item",
+    "description": "Updated description",
+    "dueDate": "2024-02-28T00:00:00Z",
+    "priority": "Medium",
+    "status": "InProgress",
+    "assignedToId": "{{user_id}}"
+}
+
+### Delete item
+DELETE {{api_url}}/api/lists/{{list_id}}/items/{{item_id}}

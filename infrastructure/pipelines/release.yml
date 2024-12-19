@@ -1,0 +1,104 @@
+trigger: none
+pr: none
+
+parameters:
+  - name: environment
+    type: string
+    default: 'dev'
+    values:
+      - dev
+      - test
+      - prod
+
+variables:
+  - group: 'todo-api-${{ parameters.environment }}'
+  - name: resourceGroupName
+    value: 'rg-todo-${{ parameters.environment }}'
+  - name: location
+    value: 'eastus'
+  - name: appName
+    value: 'todo-api'
+
+stages:
+  - stage: Deploy_Infrastructure
+    jobs:
+      - deployment: DeployInfrastructure
+        environment: ${{ parameters.environment }}
+        pool:
+          vmImage: 'ubuntu-latest'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+
+                - task: AzureCLI@2
+                  inputs:
+                    azureSubscription: 'Azure-ServiceConnection'
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      az group create --name $(resourceGroupName) --location $(location)
+
+                - task: AzureCLI@2
+                  inputs:
+                    azureSubscription: 'Azure-ServiceConnection'
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      az deployment group create \
+                        --resource-group $(resourceGroupName) \
+                        --template-file infrastructure/bicep/main.bicep \
+                        --parameters environment=${{ parameters.environment }} \
+                        --parameters appName=$(appName) \
+                        --parameters location=$(location) \
+                        --parameters administratorLogin=$(sqlAdminUsername) \
+                        --parameters administratorLoginPassword=$(sqlAdminPassword)
+
+  - stage: Deploy_Function
+    dependsOn: Deploy_Infrastructure
+    jobs:
+      - deployment: DeployFunction
+        environment: ${{ parameters.environment }}
+        pool:
+          vmImage: 'ubuntu-latest'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - download: current
+                  artifact: function
+
+                - task: AzureFunctionApp@1
+                  inputs:
+                    azureSubscription: 'Azure-ServiceConnection'
+                    appType: 'functionAppLinux'
+                    appName: 'func-todo-${{ parameters.environment }}'
+                    package: '$(Pipeline.Workspace)/function/**/*.zip'
+                    runtimeStack: 'DOTNET-ISOLATED|9.0'
+
+  - stage: Run_Database_Migrations
+    dependsOn: Deploy_Function
+    jobs:
+      - deployment: RunMigrations
+        environment: ${{ parameters.environment }}
+        pool:
+          vmImage: 'ubuntu-latest'
+        variables:
+          functionAppName: 'func-todo-${{ parameters.environment }}'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: AzureFunctionApp@1
+                  inputs:
+                    azureSubscription: 'Azure-ServiceConnection'
+                    appType: 'functionAppLinux'
+                    appName: $(functionAppName)
+                    command: 'start'
+
+                - task: AzureAppServiceManage@0
+                  inputs:
+                    azureSubscription: 'Azure-ServiceConnection'
+                    action: 'Restart'
+                    appName: $(functionAppName)

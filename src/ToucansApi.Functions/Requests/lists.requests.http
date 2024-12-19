@@ -1,0 +1,42 @@
+### Get all lists
+GET {{api_url}}/api/lists
+
+### Get list by ID
+GET {{api_url}}/api/lists/{{list_id}}
+
+### Create list
+POST {{api_url}}/api/lists
+Content-Type: application/json
+
+{
+    "name": "My Todo List",
+    "description": "Description of my todo list",
+    "ownerId": "{{user_id}}"
+}
+
+### Update list
+PUT {{api_url}}/api/lists/{{list_id}}
+Content-Type: application/json
+
+{
+  "name": "Updated Todo List",
+  "description": "Updated description"
+}
+
+### Delete list
+DELETE {{api_url}}/api/lists/{{list_id}}
+
+### Share list
+POST {{api_url}}/api/lists/{{list_id}}/share
+Content-Type: application/json
+
+{
+    "userId": "{{shared_user_id}}",
+    "permission": "Read"
+}
+
+### Get list shares
+GET {{api_url}}/api/lists/{{list_id}}/shares
+
+### Remove list share
+DELETE {{api_url}}/api/lists/{{list_id}}/share/{{shared_user_id}}
