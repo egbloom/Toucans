@@ -36,9 +36,9 @@ public class Program
                                            ?? throw new InvalidOperationException(
                                                "Connection string 'DefaultConnection' not found.");
 
-                    options.UseSqlServer(connectionString, sqlOptions =>
+                    options.UseNpgsql(connectionString, npgsqlOptions =>
                     {
-                        sqlOptions.EnableRetryOnFailure(
+                        npgsqlOptions.EnableRetryOnFailure(
                             5,
                             TimeSpan.FromSeconds(30),
                             null);
@@ -53,7 +53,6 @@ public class Program
                 services.AddLogging(builder => { builder.AddConsole(); });
             })
             .Build();
-
 
         using (var scope = host.Services.CreateScope())
         {
@@ -70,7 +69,6 @@ public class Program
                 throw;
             }
         }
-
 
         await host.RunAsync();
     }

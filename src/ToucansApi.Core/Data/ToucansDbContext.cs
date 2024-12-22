@@ -5,83 +5,71 @@ namespace ToucansApi.Core.Data;
 
 public class ToucansDbContext : DbContext
 {
-    public ToucansDbContext(DbContextOptions<ToucansDbContext> options)
-        : base(options)
+    public ToucansDbContext(DbContextOptions<ToucansDbContext> options) : base(options)
     {
     }
 
-    public DbSet<TodoList> TodoLists { get; set; }
-    public DbSet<TodoItem> TodoItems { get; set; }
-    public DbSet<User> Users { get; set; }
-    public DbSet<TodoListShare> TodoListShares { get; set; }
+    public DbSet<User> Users { get; set; } = null!;
+    public DbSet<TodoList> TodoLists { get; set; } = null!;
+    public DbSet<TodoItem> TodoItems { get; set; } = null!;
+    public DbSet<TodoListShare> TodoListShares { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder);
+
+        // User configuration
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.ToTable("Users");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Email).HasMaxLength(255).IsRequired();
+            entity.HasIndex(e => e.Email).IsUnique();
+            entity.Property(e => e.FirstName).HasMaxLength(100);
+            entity.Property(e => e.LastName).HasMaxLength(100);
+        });
+
+        // TodoList configuration
         modelBuilder.Entity<TodoList>(entity =>
         {
+            entity.ToTable("TodoLists");
             entity.HasKey(e => e.Id);
-
-            entity.Property(e => e.Name)
-                .IsRequired()
-                .HasMaxLength(100);
-
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValue(DateTime.UtcNow);
+            entity.Property(e => e.Name).HasMaxLength(200).IsRequired();
+            entity.Property(e => e.Description).HasMaxLength(1000);
 
             entity.HasOne(e => e.Owner)
-                .WithMany()
+                .WithMany(u => u.OwnedLists)
                 .HasForeignKey(e => e.OwnerId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            entity.HasMany(e => e.Items)
-                .WithOne(i => i.List)
-                .HasForeignKey(i => i.ListId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            entity.HasMany(e => e.SharedWith)
-                .WithOne(s => s.TodoList)
-                .HasForeignKey(s => s.TodoListId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
+        // TodoItem configuration
         modelBuilder.Entity<TodoItem>(entity =>
         {
+            entity.ToTable("TodoItems");
             entity.HasKey(e => e.Id);
+            entity.Property(e => e.Title).HasMaxLength(200).IsRequired();
+            entity.Property(e => e.Description).HasMaxLength(1000);
 
-            entity.Property(e => e.Title)
-                .IsRequired()
-                .HasMaxLength(200);
+            entity.HasOne(e => e.TodoList)
+                .WithMany(l => l.Items)
+                .HasForeignKey(e => e.TodoListId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-            entity.Property(e => e.Description)
-                .IsRequired();
-
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("GETUTCDATE()");
-
-            entity.Property(e => e.Priority)
-                .HasConversion<string>();
-
-            entity.Property(e => e.Status)
-                .HasConversion<string>();
-
-            // Relationship with User (AssignedTo)
             entity.HasOne(e => e.AssignedTo)
                 .WithMany()
                 .HasForeignKey(e => e.AssignedToId)
                 .OnDelete(DeleteBehavior.SetNull);
-
-            entity.HasOne(e => e.List)
-                .WithMany(l => l.Items)
-                .HasForeignKey(e => e.ListId)
-                .OnDelete(DeleteBehavior.Cascade);
         });
 
+        // TodoListShare configuration
         modelBuilder.Entity<TodoListShare>(entity =>
         {
-            entity.HasKey(e => e.Id);
+            entity.ToTable("TodoListShares");
+            entity.HasKey(e => new { e.TodoListId, e.SharedWithUserId });
 
             entity.HasOne(e => e.TodoList)
-                .WithMany(l => l.SharedWith)
+                .WithMany(l => l.Shares)
                 .HasForeignKey(e => e.TodoListId)
                 .OnDelete(DeleteBehavior.Cascade);
 
@@ -89,33 +77,6 @@ public class ToucansDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.SharedWithUserId)
                 .OnDelete(DeleteBehavior.Cascade);
-
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("GETUTCDATE()");
-        });
-
-        modelBuilder.Entity<User>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-
-            entity.Property(e => e.Email)
-                .IsRequired()
-                .HasMaxLength(100);
-
-            entity.Property(e => e.FirstName)
-                .IsRequired()
-                .HasMaxLength(50);
-
-            entity.Property(e => e.LastName)
-                .IsRequired()
-                .HasMaxLength(50);
-
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("GETUTCDATE()");
-
-            entity.HasMany(e => e.OwnedLists)
-                .WithOne(l => l.Owner)
-                .HasForeignKey(l => l.OwnerId);
         });
     }
 }

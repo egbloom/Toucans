@@ -18,5 +18,5 @@ public class TodoList
 
     public virtual User? Owner { get; set; }
     public virtual ICollection<TodoItem>? Items { get; set; }
-    public virtual ICollection<TodoListShare>? SharedWith { get; set; }
+    public ICollection<TodoListShare> Shares { get; set; } = new List<TodoListShare>();
 }
