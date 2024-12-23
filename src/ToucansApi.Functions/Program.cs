@@ -68,7 +68,7 @@ public class Program
             catch (Exception ex)
             {
                 var logger = services.GetRequiredService<ILogger<Program>>();
-                logger.LogError(ex, "An error occurred while migrating the database.");
+                logger.LogError(ex, "An error occurred while migrating the database");
                 throw;
             }
         }

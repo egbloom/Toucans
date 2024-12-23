@@ -1,6 +1,5 @@
 namespace ToucansApi.Core.Models;
 
-// New event tracking class
 public class TodoListEvent
 {
     public Guid Id { get; set; } = Guid.Empty;

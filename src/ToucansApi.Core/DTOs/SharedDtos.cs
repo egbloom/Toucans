@@ -6,7 +6,7 @@ public class PaginatedResponse<T>
     {
         Items = new List<T>(items);
         TotalItems = totalItems;
-        CurrentPage = currentPage; // Updated parameter name
+        CurrentPage = currentPage;
         PageSize = pageSize;
 
         TotalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
@@ -15,7 +15,7 @@ public class PaginatedResponse<T>
     }
 
     public List<T> Items { get; }
-    public int CurrentPage { get; } // Changed from PageNumber to CurrentPage
+    public int CurrentPage { get; }
     public int PageSize { get; }
     public int TotalItems { get; }
     public int TotalPages { get; }

@@ -25,7 +25,6 @@ public class UserRepository : IUserRepository
         {
             var query = _context.Users.AsNoTracking();
 
-            // Apply filters
             if (!string.IsNullOrWhiteSpace(filter.SearchTerm))
                 query = query.Where(u =>
                     EF.Functions.Like(u.Email, $"%{filter.SearchTerm}%") ||
