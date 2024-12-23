@@ -18,7 +18,6 @@ public class ToucansDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // User configuration
         modelBuilder.Entity<User>(entity =>
         {
             entity.ToTable("Users");
@@ -29,7 +28,6 @@ public class ToucansDbContext : DbContext
             entity.Property(e => e.LastName).HasMaxLength(100);
         });
 
-        // TodoList configuration
         modelBuilder.Entity<TodoList>(entity =>
         {
             entity.ToTable("TodoLists");
@@ -43,7 +41,6 @@ public class ToucansDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // TodoItem configuration
         modelBuilder.Entity<TodoItem>(entity =>
         {
             entity.ToTable("TodoItems");
@@ -62,7 +59,6 @@ public class ToucansDbContext : DbContext
                 .OnDelete(DeleteBehavior.SetNull);
         });
 
-        // TodoListShare configuration
         modelBuilder.Entity<TodoListShare>(entity =>
         {
             entity.ToTable("TodoListShares");
@@ -77,6 +73,24 @@ public class ToucansDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.SharedWithUserId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<TodoListEvent>(entity =>
+        {
+            entity.ToTable("TodoListEvents");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.EventType).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.EventData).HasMaxLength(4000).IsRequired();
+
+            entity.HasOne(e => e.TodoList)
+                .WithMany(l => l.Events)
+                .HasForeignKey(e => e.TodoListId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

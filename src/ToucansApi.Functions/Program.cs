@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using ToucansApi.Core.Configuration;
 using ToucansApi.Core.Data;
 using ToucansApi.Functions.Interfaces.Repositories;
+using ToucansApi.Functions.Middleware;
 using ToucansApi.Functions.Repositories;
 
 namespace ToucansApi.Functions;
@@ -44,6 +45,8 @@ public class Program
                             null);
                     });
                 });
+
+                services.AddEventStore(configuration);
 
                 services.AddScoped<ITodoListRepository, TodoListRepository>();
                 services.AddScoped<ITodoItemRepository, TodoItemRepository>();
