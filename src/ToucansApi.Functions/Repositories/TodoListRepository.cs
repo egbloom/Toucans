@@ -7,22 +7,14 @@ using ToucansApi.Functions.Interfaces.Repositories;
 
 namespace ToucansApi.Functions.Repositories;
 
-public class TodoListRepository : ITodoListRepository
+public class TodoListRepository(ToucansDbContext context, ILogger<TodoListRepository> logger)
+    : ITodoListRepository
 {
-    private readonly ToucansDbContext _context;
-    private readonly ILogger<TodoListRepository> _logger;
-
-    public TodoListRepository(ToucansDbContext context, ILogger<TodoListRepository> logger)
-    {
-        _context = context;
-        _logger = logger;
-    }
-
     public async Task<IEnumerable<TodoListResponseDto>> GetAllAsync()
     {
         try
         {
-            var lists = await _context.TodoLists
+            var lists = await context.TodoLists
                 .AsNoTracking()
                 .Include(l => l.Owner)
                 .Include(l => l.Items)
@@ -62,7 +54,7 @@ public class TodoListRepository : ITodoListRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving all todo lists");
+            logger.LogError(ex, "Error retrieving all todo lists");
             throw;
         }
     }
@@ -71,7 +63,7 @@ public class TodoListRepository : ITodoListRepository
     {
         try
         {
-            var list = await _context.TodoLists
+            var list = await context.TodoLists
                 .AsNoTracking()
                 .Include(l => l.Owner)
                 .Include(l => l.Items)
@@ -111,7 +103,7 @@ public class TodoListRepository : ITodoListRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving todo list with id {Id}", id);
+            logger.LogError(ex, "Error retrieving todo list with id {Id}", id);
             throw;
         }
     }
@@ -122,20 +114,20 @@ public class TodoListRepository : ITodoListRepository
         {
             var list = new TodoList
             {
-                Name = dto.Name,
-                Description = dto.Description,
+                Name = dto.Name ?? string.Empty,
+                Description = dto.Description ?? string.Empty,
                 OwnerId = dto.OwnerId,
                 CreatedAt = DateTime.UtcNow
             };
 
-            _context.TodoLists.Add(list);
-            await _context.SaveChangesAsync();
+            context.TodoLists.Add(list);
+            await context.SaveChangesAsync();
 
             return await GetByIdAsync(list.Id);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error creating todo list");
+            logger.LogError(ex, "Error creating todo list");
             throw;
         }
     }
@@ -144,19 +136,19 @@ public class TodoListRepository : ITodoListRepository
     {
         try
         {
-            var list = await _context.TodoLists.FindAsync(id);
+            var list = await context.TodoLists.FindAsync(id);
             if (list == null) return false;
 
             list.Name = dto.Name;
             list.Description = dto.Description;
             list.LastModifiedAt = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error updating todo list {Id}", id);
+            logger.LogError(ex, "Error updating todo list {Id}", id);
             throw;
         }
     }
@@ -165,16 +157,16 @@ public class TodoListRepository : ITodoListRepository
     {
         try
         {
-            var list = await _context.TodoLists.FindAsync(id);
+            var list = await context.TodoLists.FindAsync(id);
             if (list == null) return false;
 
-            _context.TodoLists.Remove(list);
-            await _context.SaveChangesAsync();
+            context.TodoLists.Remove(list);
+            await context.SaveChangesAsync();
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error deleting todo list {Id}", id);
+            logger.LogError(ex, "Error deleting todo list {Id}", id);
             throw;
         }
     }
@@ -183,24 +175,34 @@ public class TodoListRepository : ITodoListRepository
     {
         if (!dto.UserId.HasValue || !dto.Permission.HasValue)
         {
-            _logger.LogError("Invalid ShareListDto: UserId or Permission is null");
+            logger.LogError("Invalid ShareListDto: UserId or Permission is null");
             return false;
         }
 
         try
         {
-            var list = await _context.TodoLists.FindAsync(listId);
+            var list = await context.TodoLists.FindAsync(listId);
             if (list == null) return false;
 
-            var user = await _context.Users.FindAsync(dto.UserId.Value);
+            var user = await context.Users.FindAsync(dto.UserId.Value);
             if (user == null) return false;
 
-            var existingShare = await _context.TodoListShares
+            var existingShare = await context.TodoListShares
                 .FirstOrDefaultAsync(s => s.TodoListId == listId && s.SharedWithUserId == dto.UserId.Value);
 
             if (existingShare != null)
             {
-                existingShare.Permission = dto.Permission.Value;
+                context.TodoListShares.Remove(existingShare);
+                var updatedShare = new TodoListShare
+                {
+                    TodoListId = listId,
+                    SharedWithUserId = dto.UserId.Value,
+                    Permission = dto.Permission.Value,
+                    CreatedAt = existingShare.CreatedAt,
+                    TodoList = list,
+                    SharedWithUser = user
+                };
+                context.TodoListShares.Add(updatedShare);
             }
             else
             {
@@ -209,17 +211,19 @@ public class TodoListRepository : ITodoListRepository
                     TodoListId = listId,
                     SharedWithUserId = dto.UserId.Value,
                     Permission = dto.Permission.Value,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    TodoList = list,
+                    SharedWithUser = user
                 };
-                _context.TodoListShares.Add(share);
+                context.TodoListShares.Add(share);
             }
 
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error sharing todo list {ListId} with user {UserId}", listId, dto.UserId);
+            logger.LogError(ex, "Error sharing todo list {ListId} with user {UserId}", listId, dto.UserId);
             throw;
         }
     }
@@ -228,18 +232,18 @@ public class TodoListRepository : ITodoListRepository
     {
         try
         {
-            var share = await _context.TodoListShares
+            var share = await context.TodoListShares
                 .FirstOrDefaultAsync(s => s.TodoListId == listId && s.SharedWithUserId == userId);
 
             if (share == null) return false;
 
-            _context.TodoListShares.Remove(share);
-            await _context.SaveChangesAsync();
+            context.TodoListShares.Remove(share);
+            await context.SaveChangesAsync();
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error removing share for list {ListId} from user {UserId}", listId, userId);
+            logger.LogError(ex, "Error removing share for list {ListId} from user {UserId}", listId, userId);
             throw;
         }
     }
@@ -248,7 +252,7 @@ public class TodoListRepository : ITodoListRepository
     {
         try
         {
-            return await _context.TodoListShares
+            return await context.TodoListShares
                 .AsNoTracking()
                 .Where(s => s.TodoListId == listId)
                 .Select(s => new ShareResponseDto
@@ -267,7 +271,7 @@ public class TodoListRepository : ITodoListRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving shares for list {ListId}", listId);
+            logger.LogError(ex, "Error retrieving shares for list {ListId}", listId);
             throw;
         }
     }

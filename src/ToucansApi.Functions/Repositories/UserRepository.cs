@@ -8,22 +8,13 @@ using ToucansApi.Functions.Interfaces.Repositories;
 
 namespace ToucansApi.Functions.Repositories;
 
-public class UserRepository : IUserRepository
+public class UserRepository(ToucansDbContext context, ILogger<UserRepository> logger) : IUserRepository
 {
-    private readonly ToucansDbContext _context;
-    private readonly ILogger<UserRepository> _logger;
-
-    public UserRepository(ToucansDbContext context, ILogger<UserRepository> logger)
-    {
-        _context = context;
-        _logger = logger;
-    }
-
     public async Task<PaginatedResponse<UserResponseDto>> GetAllAsync(UserFilterDto filter)
     {
         try
         {
-            var query = _context.Users.AsNoTracking();
+            var query = context.Users.AsNoTracking();
 
             if (!string.IsNullOrWhiteSpace(filter.SearchTerm))
                 query = query.Where(u =>
@@ -49,14 +40,14 @@ public class UserRepository : IUserRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving users");
+            logger.LogError(ex, "Error retrieving users");
             throw;
         }
     }
 
     public async Task<UserResponseDto?> GetByIdAsync(Guid id)
     {
-        return await _context.Users
+        return await context.Users
             .AsNoTracking()
             .Where(u => u.Id == id)
             .Select(u => new UserResponseDto
@@ -81,8 +72,8 @@ public class UserRepository : IUserRepository
             CreatedAt = DateTime.UtcNow
         };
 
-        _context.Users.Add(user);
-        await _context.SaveChangesAsync();
+        context.Users.Add(user);
+        await context.SaveChangesAsync();
 
         return new UserResponseDto
         {
@@ -97,29 +88,29 @@ public class UserRepository : IUserRepository
 
     public async Task<bool> UpdateAsync(Guid id, UserUpdateDto dto)
     {
-        var user = await _context.Users.FindAsync(id);
+        var user = await context.Users.FindAsync(id);
         if (user == null) return false;
 
         user.FirstName = dto.FirstName;
         user.LastName = dto.LastName;
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
         return true;
     }
 
     public async Task<bool> DeleteAsync(Guid id)
     {
-        var user = await _context.Users.FindAsync(id);
+        var user = await context.Users.FindAsync(id);
         if (user == null) return false;
 
-        _context.Users.Remove(user);
-        await _context.SaveChangesAsync();
+        context.Users.Remove(user);
+        await context.SaveChangesAsync();
         return true;
     }
 
     public async Task<IEnumerable<TodoListResponseDto>> GetUserListsAsync(Guid userId)
     {
-        return await _context.TodoLists
+        return await context.TodoLists
             .AsNoTracking()
             .Where(l => l.OwnerId == userId)
             .Select(l => new TodoListResponseDto
@@ -137,7 +128,7 @@ public class UserRepository : IUserRepository
 
     public async Task<IEnumerable<TodoListResponseDto>> GetSharedListsAsync(Guid userId)
     {
-        return await _context.TodoListShares
+        return await context.TodoListShares
             .AsNoTracking()
             .Where(s => s.SharedWithUserId == userId)
             .Select(s => new TodoListResponseDto

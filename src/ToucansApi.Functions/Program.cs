@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ToucansApi.Core.Configuration;
@@ -16,28 +17,38 @@ public class Program
     public static async Task Main(string[] args)
     {
         var host = new HostBuilder()
-            .ConfigureFunctionsWorkerDefaults()
+            .ConfigureFunctionsWebApplication()
+            .ConfigureFunctionsWorkerDefaults(builder =>
+            {
+                builder.UseMiddleware<ExceptionHandlingMiddleware>();
+                builder.UseWhen<HealthCheckMiddleware>(context =>
+                    context.FunctionDefinition.EntryPoint.Contains("HealthCheckFunction"));
+            })
             .ConfigureAppConfiguration(configBuilder =>
             {
                 configBuilder
                     .SetBasePath(Directory.GetCurrentDirectory())
-                    .AddJsonFile("local.settings.json", true, true)
+                    .AddJsonFile("appsettings.json", false, true)
+                    .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")}.json", true,
+                        true)
                     .AddEnvironmentVariables();
             })
             .ConfigureServices((context, services) =>
             {
                 var configuration = context.Configuration;
-
+                var connectionString = configuration.GetConnectionString("DefaultConnection")
+                                       ?? throw new InvalidOperationException(
+                                           "Connection string 'DefaultConnection' not found.");
                 services.Configure<Settings>(configuration.GetSection("Settings"));
                 services.Configure<AuthenticationConfiguration>(configuration.GetSection("Authentication"));
 
                 services.AddDbContext<ToucansDbContext>(options =>
                 {
-                    var connectionString = configuration.GetConnectionString("DefaultConnection")
-                                           ?? throw new InvalidOperationException(
-                                               "Connection string 'DefaultConnection' not found.");
+                    var dbConnectionString = configuration.GetConnectionString("DefaultConnection")
+                                             ?? throw new InvalidOperationException(
+                                                 "Connection string 'DefaultConnection' not found.");
 
-                    options.UseNpgsql(connectionString, npgsqlOptions =>
+                    options.UseNpgsql(dbConnectionString, npgsqlOptions =>
                     {
                         npgsqlOptions.EnableRetryOnFailure(
                             5,
@@ -54,6 +65,14 @@ public class Program
 
                 services.AddApplicationInsightsTelemetryWorkerService();
                 services.AddLogging(builder => { builder.AddConsole(); });
+
+                services.AddHealthChecks()
+                    .AddDbContextCheck<ToucansDbContext>()
+                    .AddNpgSql(
+                        connectionString,
+                        name: "postgresql",
+                        tags: ["db", "postgresql"]);
+                services.AddScoped<HealthCheckService>();
             })
             .Build();
 

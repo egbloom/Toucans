@@ -9,16 +9,10 @@ using ToucansApi.Functions.Interfaces.Repositories;
 
 namespace ToucansApi.Functions.Repositories;
 
-public class TodoItemRepository : ITodoItemRepository
+public class TodoItemRepository(ToucansDbContext context, ILogger<TodoItemRepository> logger)
+    : ITodoItemRepository
 {
-    private readonly ToucansDbContext _context;
-    private readonly ILogger<TodoItemRepository> _logger;
-
-    public TodoItemRepository(ToucansDbContext context, ILogger<TodoItemRepository> logger)
-    {
-        _context = context;
-        _logger = logger;
-    }
+    private readonly ILogger<TodoItemRepository> _logger = logger;
 
     public async Task<PaginatedResponse<TodoItemResponseDto>> GetAllAsync(TodoItemFilterDto filter)
     {
@@ -37,8 +31,8 @@ public class TodoItemRepository : ITodoItemRepository
         var item = new TodoItem
         {
             ListId = listId,
-            Title = dto.Title,
-            Description = dto.Description,
+            Title = dto.Title ?? string.Empty,
+            Description = dto.Description ?? string.Empty,
             CreatedAt = DateTime.UtcNow,
             DueDate = dto.DueDate,
             Priority = dto.Priority,
@@ -46,15 +40,15 @@ public class TodoItemRepository : ITodoItemRepository
             AssignedToId = dto.AssignedToId
         };
 
-        _context.TodoItems.Add(item);
-        await _context.SaveChangesAsync();
+        context.TodoItems.Add(item);
+        await context.SaveChangesAsync();
 
         return await GetByIdAsync(listId, item.Id);
     }
 
     public async Task<TodoItemResponseDto> GetByIdAsync(Guid listId, Guid id)
     {
-        return await _context.TodoItems
+        return await context.TodoItems
             .AsNoTracking()
             .Where(i => i.ListId == listId && i.Id == id)
             .Select(i => new TodoItemResponseDto
@@ -101,7 +95,7 @@ public class TodoItemRepository : ITodoItemRepository
             item.CompletedAt = dto.Status == TodoStatus.Completed ? DateTime.UtcNow : null;
         }
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
         return true;
     }
 
@@ -109,14 +103,14 @@ public class TodoItemRepository : ITodoItemRepository
     {
         var item = await GetItemOrThrow(listId, id);
 
-        _context.TodoItems.Remove(item);
-        await _context.SaveChangesAsync();
+        context.TodoItems.Remove(item);
+        await context.SaveChangesAsync();
         return true;
     }
 
     private IQueryable<TodoItem> BuildFilteredQuery(TodoItemFilterDto filter)
     {
-        var query = _context.TodoItems
+        var query = context.TodoItems
             .AsNoTracking()
             .Where(i => i.ListId == filter.ListId);
 
@@ -185,13 +179,13 @@ public class TodoItemRepository : ITodoItemRepository
         item.Status = status;
         item.CompletedAt = status == TodoStatus.Completed ? DateTime.UtcNow : null;
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
         return true;
     }
 
     private async Task<TodoItem> GetItemOrThrow(Guid listId, Guid id)
     {
-        var item = await _context.TodoItems
+        var item = await context.TodoItems
             .FirstOrDefaultAsync(i => i.ListId == listId && i.Id == id);
 
         if (item == null)
@@ -202,7 +196,7 @@ public class TodoItemRepository : ITodoItemRepository
 
     private async Task ValidateListExists(Guid listId)
     {
-        if (!await _context.TodoLists.AnyAsync(l => l.Id == listId))
+        if (!await context.TodoLists.AnyAsync(l => l.Id == listId))
             throw new NotFoundException($"TodoList with ID {listId} not found");
     }
 }

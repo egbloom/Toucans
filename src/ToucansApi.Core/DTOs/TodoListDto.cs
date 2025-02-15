@@ -12,7 +12,7 @@ public class TodoListCreateDto
 
 public class TodoListUpdateDto
 {
-    [Required] [StringLength(100)] public string? Name { get; set; }
+    [Required] [StringLength(100)] public required string Name { get; set; }
 
     public string? Description { get; set; }
 }

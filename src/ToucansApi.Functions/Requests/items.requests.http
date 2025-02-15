@@ -1,6 +1,8 @@
 ### Get items for list
 GET {{api_url}}/api/lists/{{list_id}}/items
 Content-Type: application/json
+Connection: keep-alive
+User-Agent: JetBrains-HttpClient/1.0
 
 {
     "priority": "High",

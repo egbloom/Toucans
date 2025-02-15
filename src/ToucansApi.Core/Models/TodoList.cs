@@ -17,8 +17,10 @@ public class TodoList
     public Guid OwnerId { get; set; }
 
     public virtual User? Owner { get; set; }
-    public virtual ICollection<TodoItem>? Items { get; set; }
-    public ICollection<TodoListShare> Shares { get; set; } = new List<TodoListShare>();
 
-    public ICollection<TodoListEvent> Events { get; set; } = new List<TodoListEvent>();
+    public virtual ICollection<TodoItem>? Items { get; set; }
+
+    public ICollection<TodoListShare> Shares { get; init; } = new List<TodoListShare>();
+
+    public ICollection<TodoListEvent> Events { get; init; } = new List<TodoListEvent>();
 }

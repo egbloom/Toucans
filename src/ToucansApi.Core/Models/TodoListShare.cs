@@ -1,29 +1,21 @@
-using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace ToucansApi.Core.Models
+namespace ToucansApi.Core.Models;
 
+public class TodoListShare
 {
-    public class TodoListShare
-    {
-        public Guid Id { get; set; }
+    public Guid Id { get; init; }
 
-        [Required]
-        public Guid TodoListId { get; set; }
+    [Required] public Guid TodoListId { get; init; }
 
-        [ForeignKey("TodoListId")]
-        public virtual TodoList? TodoList { get; set; }
-        
-        [Required]
-        public Guid SharedWithUserId { get; set; }
+    [ForeignKey("TodoListId")] public required TodoList TodoList { get; init; }
 
-        [ForeignKey("SharedWithUserId")]
-        public virtual User? SharedWithUser { get; set; }
-        
-        [Required]
-        public SharePermission Permission { get; set; }
+    [Required] public Guid SharedWithUserId { get; init; }
 
-        public DateTime CreatedAt { get; set; }
-    }
+    [ForeignKey("SharedWithUserId")] public required User SharedWithUser { get; init; }
+
+    [Required] public SharePermission Permission { get; init; }
+
+    public DateTime CreatedAt { get; init; }
 }

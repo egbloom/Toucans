@@ -16,7 +16,9 @@ public static class EventStoreConfig
     {
         services.AddMarten(opts =>
             {
-                opts.Connection(configuration.GetConnectionString("EventStore"));
+                opts.Connection(
+                    configuration.GetConnectionString("EventStore")
+                    ?? throw new InvalidOperationException("Missing EventStore connection string."));
 
                 opts.AutoCreateSchemaObjects = AutoCreate.All;
 
@@ -25,8 +27,6 @@ public static class EventStoreConfig
 
                 opts.Events.AddEventType<TodoListCreated>();
                 opts.Events.AddEventType<TodoItemAdded>();
-
-                // opts.Concurrency = ConcurrencyStyle.Optimistic;
             })
             .IntegrateWithWolverine();
 
