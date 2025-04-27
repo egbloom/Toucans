@@ -18,9 +18,9 @@
 
     <ItemGroup>
         <PackageReference Include="AspNetCore.HealthChecks.NpgSql" Version="9.0.0"/>
-        <PackageReference Include="Marten" Version="7.39.6" />
-        <PackageReference Include="Marten.AspNetCore" Version="7.39.6" />
-        <PackageReference Include="Marten.CommandLine" Version="7.39.6" />
+        <PackageReference Include="Marten" Version="7.40.1" />
+        <PackageReference Include="Marten.AspNetCore" Version="7.40.1" />
+        <PackageReference Include="Marten.CommandLine" Version="7.40.1" />
         <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="2.0.0"/>
         <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http" Version="3.3.0"/>
         <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http.AspNetCore" Version="2.0.1"/>
@@ -33,8 +33,8 @@
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.4" />
         <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.4" />
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
-        <PackageReference Include="WolverineFx" Version="3.12.1" />
-        <PackageReference Include="WolverineFx.Marten" Version="3.12.1" />
+        <PackageReference Include="WolverineFx" Version="3.12.2" />
+        <PackageReference Include="WolverineFx.Marten" Version="3.12.2" />
     </ItemGroup>
 
     <ItemGroup>
